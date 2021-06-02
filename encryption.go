@@ -1,36 +1,45 @@
 package main
 
 import (
-	"bytes"
+	"crypto_file/utils"
+	"os"
 )
 
-func Encryption(filePath, out, password string) error {
+func Encryption(filePath, out, password string) (err error) {
 	var (
-		rawData       []byte
-		enctyptedData []byte
+		origionF, destinationF *os.File
 	)
 
 	{
-		f, err := openFile(filePath)
+		origionF, err = utils.OpenFileRead(filePath)
 		if err != nil {
 			return err
 		}
+		defer origionF.Close()
 
-		rawData, err = readFileData(f)
+		destinationF, err = utils.CreateFile(out)
 		if err != nil {
 			return err
 		}
-
-		enctyptedData = XORData(rawData, password)
+		defer destinationF.Close()
 	}
 
 	{
-		dataHash := getHash(rawData)
-		enctyptedData = bytes.Join([][]byte{enctyptedData, dataHash}, []byte{})
+		dataHash, err := utils.GetFileHash(filePath)
+		if err != nil {
+			return err
+		}
+		_, err = destinationF.Write(dataHash)
+		if err != nil {
+			return err
+		}
 	}
 
 	{
-		writeFileData(out, enctyptedData)
+		err = utils.XORFile(origionF, destinationF, password)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

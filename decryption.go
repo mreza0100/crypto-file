@@ -1,50 +1,54 @@
 package main
 
 import (
-	"log"
+	"crypto_file/utils"
+	"fmt"
+	"os"
 )
 
-func Decryption(filePath, out, password string) error {
+func Decryption(filePath, out, password string) (err error) {
 	var (
-		enctyptedData []byte
-		decryptedData []byte
-
-		originalHash []byte
+		origionF, destinationF *os.File
+		originalHash           []byte
 	)
 
 	{
-		f, err := openFile(filePath)
+		origionF, err = utils.OpenFileRead(filePath)
 		if err != nil {
 			return err
 		}
+		defer origionF.Close()
 
-		enctyptedData, err = readFileData(f)
-		if err != nil {
-			return err
-		}
-	}
-
-	{
-		var err error
-		enctyptedData, originalHash, err = separateHashAndData(enctyptedData)
+		destinationF, err = utils.CreateFile(out)
 		if err != nil {
 			return err
 		}
 	}
 
 	{
-		decryptedData = XORData(enctyptedData, password)
-	}
-
-	{
-		newHash := getHash(decryptedData)
-		if !compareHashs(originalHash, newHash) {
-			log.Fatal("password is wrong or file has been damaged")
+		originalHash, err = utils.ExtractHashFile(origionF)
+		if err != nil {
+			return err
 		}
 	}
 
 	{
-		writeFileData(out, decryptedData)
+		err = utils.XORFile(origionF, destinationF, password)
+		if err != nil {
+			return
+		}
+	}
+
+	{
+		newHash, err := utils.GetFileHash(out)
+		if err != nil {
+			return err
+		}
+
+		if !utils.CompareHashs(originalHash, newHash) {
+			fmt.Println(string(originalHash))
+			fmt.Println(string(newHash))
+		}
 	}
 
 	return nil

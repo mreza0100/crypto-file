@@ -2,7 +2,6 @@ package main_test
 
 import (
 	cf "crypto_file"
-	"log"
 	"os"
 	"testing"
 )
@@ -27,12 +26,12 @@ const (
 func init() {
 	f, err := createFile(targetPath)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	_, err = f.Write([]byte(testText))
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 }
 
